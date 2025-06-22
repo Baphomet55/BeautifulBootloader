@@ -158,6 +158,8 @@ _start:
 	
 	sub %edi, %eax
 
+
+
 	// setup stage
 	mov $0x70000, %edi
 	mov $0x10900, (%edi)
@@ -165,13 +167,6 @@ _start:
 	mov $0x30841, 0xc(%edi)
 
 	add $0x10, %edi
-
-	// data stage
-	/*mov $0x90000, (%edi)
-	mov $0x8, 0x8(%edi)
-	mov $0x10c01, 0xc(%edi)
-
-	add $0x10, %edi*/
 
 	// status stage
 	mov $0x1021, 0xc(%edi)
@@ -182,6 +177,8 @@ _start:
 
 	sub %edi, %eax
 
+	//configure endpoint trb
+
 	mov $0x10000, %edi
 	mov $0x50000, 0x20(%edi)
 	mov $0x1003000,0x2c(%edi)
@@ -189,6 +186,8 @@ _start:
 	mov 0x14(%eax), %edi
 	add %edi, %eax
 	movl $0x0, (%eax)
+
+	//get descriptors
 
 	// setup stage
 	mov $0x70020, %edi
