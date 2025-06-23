@@ -171,18 +171,18 @@ typedef struct {
 } EFI_BOOT_SERVICES;
 
 typedef struct {
-	EFI_TABLE_HEADER hdr;
-	short* firmware_vendor;
-	unsigned int firmware_revision;
-	void* console_in_handle;
-	void* con_in;
-	void* console_out_handle;
-	EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *con_out;
-	void* standard_error_handle;
-	void* std_err;
-	void* runtime_services;
-	EFI_BOOT_SERVICES *boot_services;
-	unsigned long number_of_table_entries;
-	void* configuration_table;
+	EFI_TABLE_HEADER Hdr;
+	short* FirmwareVendor;
+	uint32 FirmwareRevision;
+	void* ConsoleInHandle;
+	void* ConIn;
+	void* ConsoleOutHandle;
+	EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL* ConOut;
+	void* StandardErrorHandle;
+	void* StdError;
+	void* RuntimeServices;
+	EFI_BOOT_SERVICES* BootServices;
+	uint64 NumberOfTableEntries;
+	void* ConfigurationTable;
 	
 } EFI_SYSTEM_TABLE;

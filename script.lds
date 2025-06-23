@@ -10,7 +10,7 @@ SECTIONS
 	. = ALIGN(4096);
 	.data : 
 	{ 
-	  *(.rodata) 
+	  *(.rodata*) 
 	  *(.data*) 
 	}
 	. = ALIGN(4096);

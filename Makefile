@@ -10,8 +10,7 @@ boot.so : boot.o script.lds
 
 
 boot.o : test.s
-	gcc -I./ -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -mabi=ms -c boot.c -o boot.o
-	as init.s -o init.o
+	gcc -Og -I./ -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -mabi=ms -c boot.c -o boot.o
 
 install : 
 	@if ls main.efi ; then\
@@ -35,7 +34,7 @@ all :
 
 
 clean : 
-	rm boot.so boot.o init.o
+	rm boot.so boot.o
 	@if ls main.efi ; then\
 		rm main.efi;\
 	fi
