@@ -1,44 +1,27 @@
-boot : boot.so
-	@if [ $$DEBUG == "1" ]; then\
-		objcopy -j .text -j .data -j .bss -j .reloc -O pei-x86-64 --subsystem=10 boot.so main.efi;\
-	else\
-		objcopy -j .text -j .data -j .bss -j .reloc -O pei-x86-64 --subsystem=10 boot.so bootx64.efi;\
-	fi
+TARGET_EXEC := bootx64.efi
 
-boot.so : boot.o script.lds
-	ld -Tscript.lds boot.o -o boot.so
+BUILD_DIR := ./build
+SRC_DIRS := ./src
 
+SRCS := $(shell find $(SRC_DIRS) -name '*.c')
 
-boot.o : test.s
-	gcc -Og -I./ -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -mabi=ms -c boot.c -o boot.o
+OBJS := $(patsubst ./src/%.c, ./build/%.o, $(SRCS))
 
-install : 
-	@if ls main.efi ; then\
-		sudo mount poop.iso /mnt/iso;\
-		sudo rm /mnt/iso/EFI/BOOT/*;\
-		sudo cp main.efi /mnt/iso/EFI/BOOT;\
-		sudo cp shellx64.efi /mnt/iso/EFI/BOOT;\
-		sudo mv /mnt/iso/EFI/BOOT/shellx64.efi /mnt/iso/EFI/BOOT/bootx64.efi;\
-		sudo umount /mnt/iso;\
-	else\
-		sudo mount poop.iso /mnt/iso;\
-		sudo rm /mnt/iso/EFI/BOOT/*;\
-		sudo cp bootx64.efi /mnt/iso/EFI/BOOT;\
-		sudo umount /mnt/iso;\
-	fi
-	
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-all :
-	make
-	make install
+CC = gcc
+CFLAGS = $(INC_FLAGS) -Og -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -mabi=ms
+LINKER_SCRIPT := script.lds
 
+$(BUILD_DIR)/$(TARGET_EXEC): boot.so
+	objcopy -j .text -j .reloc -j .data -j .bss
 
-clean : 
-	rm boot.so boot.o
-	@if ls main.efi ; then\
-		rm main.efi;\
-	fi
-	@if ls bootx64.efi ; then\
-		rm bootx64.efi;\
-	fi
+$(BUILD_DIR)/boot.so: $(OBJS)
+	ld -T$(LINKER_SCRIPT) $(OBJS) -o $(BUILD_DIR)/boot.so
+
+$(OBJS): $(SRCS)
+	mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
