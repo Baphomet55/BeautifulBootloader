@@ -79,10 +79,11 @@ typedef enum {
 
 typedef struct {
 	uint32 type;
-	uint64 physical_address;
-	uint64 virtual_address;
+	uint64* physical_address;
+	uint64* virtual_address;
 	uint64 number_of_pages;
 	uint64 attribute;
+	uint64 reserved;
 } EFI_MEMORY_DESCRIPTOR;
 
 typedef long (*EFI_ALLOCATE_PAGES)

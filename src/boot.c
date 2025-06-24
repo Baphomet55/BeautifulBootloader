@@ -1,4 +1,5 @@
 #include "uefi.h"
+#include "palloc.h"
 
 asm(
 ".global _start\n"
@@ -54,9 +55,7 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 		
 	BS->ExitBootServices(handle, map_key);
 
-	static uint64 s = 0;
-	s = MMAP->number_of_pages;
-	
+	init_alloc(MMAP, memory_map_size);
 	while(true) {};
 	return 0;
 }
