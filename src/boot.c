@@ -56,6 +56,7 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	BS->ExitBootServices(handle, map_key);
 
 	init_alloc(MMAP, memory_map_size);
+	
 	while(true) {};
 	return 0;
 }
