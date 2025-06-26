@@ -13,7 +13,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CC = gcc
 CFLAGS = $(INC_FLAGS) -Og -fpic -ffreestanding -fno-stack-protector -fno-stack-check -fshort-wchar -mno-red-zone -maccumulate-outgoing-args -mabi=ms
 LINKER_SCRIPT := script.lds
-OBJCOPY_FLAGS := -j .text -j .reloc -j .data -j .bss -O pei-x86-64 --subsystem 10
+OBJCOPY_FLAGS := --file-alignment 64 -j .text -j .reloc -j .data -j .bss -O pei-x86-64 --subsystem 10
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(BUILD_DIR)/boot.so
 	objcopy $(OBJCOPY_FLAGS) $(BUILD_DIR)/boot.so $(BUILD_DIR)/$(TARGET_EXEC)

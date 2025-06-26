@@ -3,11 +3,6 @@
 
 #define PAGE_SIZE 0x1000
 
-typedef struct{
-	uint64 next_page;
-	uint64 free[511];	
-} PAGE;
-
 static long total_pages;
 static PAGE* top_of_page_stack = (PAGE*) -1;
 
@@ -16,7 +11,6 @@ uint64 init_alloc(EFI_MEMORY_DESCRIPTOR* memory_map, uintn memory_map_size)
 {
 	int mem_desc_count = memory_map_size / sizeof(EFI_MEMORY_DESCRIPTOR);	
 	
-	uint64* page_header_p = (uint64*) 0;
 	PAGE* page_index;
 	for(uint64 i = 0; i < mem_desc_count; i++)
 	{
@@ -30,17 +24,31 @@ uint64 init_alloc(EFI_MEMORY_DESCRIPTOR* memory_map, uintn memory_map_size)
 		if(page_index < top_of_page_stack) { page_index = base_address; }
 		
 
-		page_index->next_page = (uint64) base_address;
+		page_index->next_page = base_address;
 		page_index = base_address;
 		while(page_index < (base_address+page_count_b-1) )
 		{
-			page_index->next_page = (uint64) (page_index+1);
-			page_index = (PAGE*) page_index->next_page;
+			page_index->next_page = (page_index+1);
+			page_index = page_index->next_page;
 		}
 
-		page_index->next_page = -1;
+		page_index->next_page = (PAGE*) -1;
 		
 	}
 
-	return (uint64) page_index; 
+	return 0; 
+}
+
+void* alloc_page()
+{
+	PAGE* page = top_of_page_stack;
+	top_of_page_stack = top_of_page_stack->next_page;
+	return (void*) page;
+}
+
+void free_page(void* page_address)
+{
+	PAGE* freed_page = (PAGE*) page_address;
+	freed_page->next_page = top_of_page_stack;
+	top_of_page_stack = freed_page;
 }

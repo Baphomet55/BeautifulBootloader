@@ -1,5 +1,6 @@
 #include "uefi.h"
 #include "palloc.h"
+#include "pcie.h"
 
 asm(
 ".global _start\n"
@@ -56,7 +57,8 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	BS->ExitBootServices(handle, map_key);
 
 	init_alloc(MMAP, memory_map_size);
-	
+	uint64* pci_devices = enumerate_pci_bus();
+
 	while(true) {};
 	return 0;
 }
