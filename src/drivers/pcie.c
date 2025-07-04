@@ -1,5 +1,5 @@
 #include "uefi.h"
-#include "palloc.h"
+#include "phys_mem_m.h"
 #include "io.h"
 #include "pcie.h"
 

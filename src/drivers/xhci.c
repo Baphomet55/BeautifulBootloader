@@ -1,7 +1,7 @@
 #include "uefi.h"
 #include "pcie.h"
 #include "xhci.h"
-#include "palloc.h"
+#include "phys_mem_m.h"
 
 static xhci_cap_registers* cap_reg_address;
 static xhci_op_registers* op_reg_address;
@@ -15,7 +15,7 @@ static command_trb* command_ring_eq_p;
 static device_context* dc_array;
 
 static void* output_device_contexts;
-static void input_device_context;
+static void* input_device_context;
 
 int load_xhci_driver()
 {
@@ -88,7 +88,7 @@ int init_hc()
 	int max_dc = cap_reg_address->hcs_params_1 & 0xff;
 	max_dc = (0x400 * max_dc) >> 12;
 	//output_device_contexts = page_alloc(max_dc);
-	input_device_context = page_alloc();
+	//input_device_context = page_alloc();
 
 		
 	return max_dc;
@@ -145,7 +145,7 @@ int handle_cmd(commands cmd)
 		break;
 	}
 
-	return (int) event;
+	return 0;
 
 }
 
