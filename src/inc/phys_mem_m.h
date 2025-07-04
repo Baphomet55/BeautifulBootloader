@@ -17,4 +17,4 @@ void** get_page_table();
 
 int set_page_table(void**);
 
-uint64 init_page_table();
+uint64 init_page_table(EFI_MEMORY_DESCRIPTOR*);

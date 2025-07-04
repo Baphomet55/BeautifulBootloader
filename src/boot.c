@@ -2,7 +2,6 @@
 #include "phys_mem_m.h"
 #include "pcie.h"
 #include "xhci.h"
-#include "virt_mem_m.h"
 
 
 asm(
@@ -65,7 +64,6 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	BS->ExitBootServices(handle, map_key);
 
 	init_alloc(MMAP, memory_map_size);
-	init_virt_mem();
 	/*pci_dev_address* pci_devices = enumerate_pci_bus();
 
 	load_xhci_driver();
