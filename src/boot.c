@@ -1,6 +1,8 @@
 #include "uefi.h"
 #include "palloc.h"
 #include "pcie.h"
+#include "xhci.h"
+
 
 asm(
 ".global _start\n"
@@ -18,6 +20,11 @@ asm(
 static EFI_SYSTEM_TABLE* ST;
 static EFI_BOOT_SERVICES* BS;
 static EFI_MEMORY_DESCRIPTOR* MMAP = 0;
+
+int debug(int test)
+{
+	return test;
+}
 
 int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 {
@@ -57,8 +64,13 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	BS->ExitBootServices(handle, map_key);
 
 	init_alloc(MMAP, memory_map_size);
-	uint64* pci_devices = enumerate_pci_bus();
+	/*pci_dev_address* pci_devices = enumerate_pci_bus();
 
-	while(true) {};
+	load_xhci_driver();
+
+	init_hc();
+	//dequeue_event(0, 0);
+	//init_device(0);*/
+	while(true) {}
 	return 0;
 }
