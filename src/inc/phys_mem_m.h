@@ -5,7 +5,7 @@ struct PAGE{
 
 typedef struct PAGE PAGE;
 
-uint64 init_alloc(EFI_MEMORY_DESCRIPTOR*, uintn);
+uint64 init_phys_alloc(EFI_MEMORY_DESCRIPTOR*, uintn);
 
 void* alloc_page();
 
@@ -17,4 +17,4 @@ void** get_page_table();
 
 int set_page_table(void**);
 
-uint64 init_page_table(EFI_MEMORY_DESCRIPTOR*);
+void** init_page_table();

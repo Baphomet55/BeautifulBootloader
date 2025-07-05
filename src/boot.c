@@ -2,7 +2,7 @@
 #include "phys_mem_m.h"
 #include "pcie.h"
 #include "xhci.h"
-
+#include "virt_mem_m.h"
 
 asm(
 ".global _start\n"
@@ -63,7 +63,15 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 		
 	BS->ExitBootServices(handle, map_key);
 
-	init_alloc(MMAP, memory_map_size);
+	init_phys_alloc(MMAP, memory_map_size);
+	void** page_table = init_page_table();
+	
+	init_vaddr_space(page_table);
+	/*uint64 vaddr_space = alloc_vaddr_space();
+
+	alloc_virt_mem(vaddr_space);
+	alloc_virt_mem(vaddr_space);*/
+	
 	/*pci_dev_address* pci_devices = enumerate_pci_bus();
 
 	load_xhci_driver();

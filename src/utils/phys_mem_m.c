@@ -3,7 +3,7 @@
 
 #define PAGE_SIZE 0x1000
 
-static long phys_addr_space_sz;
+static void* phys_addr_space_sz;
 static PAGE* top_of_page_stack = (PAGE*) -1;
 
 int get_msr()
@@ -22,20 +22,40 @@ int set_page_table(void** pt_address)
 	__asm__ __volatile__("mov %rcx, %cr3");
 }
 
-uint64 init_page_table(EFI_MEMORY_DESCRIPTOR* mem_map)
+void** init_page_table()
 {
-	return 0;
+	void** pml4 = (void**) alloc_page();
+
+	void** pdpt = (void**) alloc_page();
+
+	*(pml4) = (void*) ((uint64) pdpt | 0x23);
+	uint64 number_of_pde = (uint64) phys_addr_space_sz >> 30; 
+	
+	uint64 phys_addr = 0;
+	for(int i = 0; i <= number_of_pde; i++)
+	{
+		uint64* pde = (uint64*) alloc_page();
+		pdpt[i] = (void*) ((uint64) pde | 0x23);
+	
+		for(int j = 0; j < 512 && phys_addr < (uint64) phys_addr_space_sz; j++)
+		{
+			pde[j] = phys_addr | 0xe3;
+			phys_addr+=0x200000;
+		}
+	}
+
+	set_page_table(pml4);
+	return pml4;
 }
 
 
-uint64 init_alloc(EFI_MEMORY_DESCRIPTOR* memory_map, uintn memory_map_size)
+uint64 init_phys_alloc(EFI_MEMORY_DESCRIPTOR* memory_map, uintn memory_map_size)
 {
 	int mem_desc_count = memory_map_size / sizeof(EFI_MEMORY_DESCRIPTOR);	
 	
 	PAGE* page_index;
 	for(uint64 i = 0; i < mem_desc_count; i++)
 	{
-		phys_addr_space_sz += memory_map[i].number_of_pages;
 		if(memory_map[i].type != EfiConventionalMemory)
 		{ continue; }
 
@@ -53,8 +73,9 @@ uint64 init_alloc(EFI_MEMORY_DESCRIPTOR* memory_map, uintn memory_map_size)
 			page_index->next_page = (page_index+1);
 			page_index = page_index->next_page;
 		}
-
+	
 		page_index->next_page = (PAGE*) -1;
+		phys_addr_space_sz = (void*) memory_map[i].physical_address + memory_map[i].number_of_pages*0x1000;
 		
 	}
 
