@@ -2,6 +2,7 @@
 #include "pcie.h"
 #include "xhci.h"
 #include "phys_mem_m.h"
+#include "virt_mem_m.h"
 
 static xhci_cap_registers* cap_reg_address;
 static xhci_op_registers* op_reg_address;
@@ -16,6 +17,8 @@ static device_context* dc_array;
 
 static void* output_device_contexts;
 static void* input_device_context;
+
+static uint64* vaddr_space;
 
 int load_xhci_driver()
 {
@@ -41,7 +44,9 @@ int load_xhci_driver()
 	int_registers = &runtime_reg_address->int_reg_set;
 
 	port_registers = &op_reg_address->port_reg;
-	
+
+	vaddr_space = (uint64*) alloc_vaddr_space();
+			
 	return 0;
 }
 
@@ -59,13 +64,22 @@ int start_hc()
 
 int init_hc()
 {
+
+	int max_dc = cap_reg_address->hcs_params_1 & 0xff;
+	max_dc = (0x400 * max_dc) >> 12;
+
+	for(int i = 0; i < max_dc + 2; i++)
+	{
+		alloc_virt_mem((uint64)vaddr_space);		
+	}
+
 	reset_hc();
 	
 	while((op_reg_address->usb_status & 0x800)) {};
 
 	op_reg_address->config |= (cap_reg_address->hcs_params_1 & 0xff);	
 
-	uint64 xhci_page = (uint64) alloc_page();
+	uint64 xhci_page = virt_to_phys((uint64)vaddr_space);
 	op_reg_address->dcbaap = (uint64*) xhci_page;
 	op_reg_address->dcbaap[0] = 0;
 	xhci_page += 0x800;
@@ -84,14 +98,12 @@ int init_hc()
 	int_registers[0].erst_size = 1;
 
 	start_hc();
-	
-	int max_dc = cap_reg_address->hcs_params_1 & 0xff;
-	max_dc = (0x400 * max_dc) >> 12;
+
 	//output_device_contexts = page_alloc(max_dc);
 	//input_device_context = page_alloc();
 
 		
-	return max_dc;
+	return xhci_page;
 }
 
 int dequeue_event(int er_index, event_trb** event)

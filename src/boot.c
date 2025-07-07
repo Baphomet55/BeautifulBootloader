@@ -67,18 +67,14 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	void** page_table = init_page_table();
 	
 	init_vaddr_space(page_table);
-	/*uint64 vaddr_space = alloc_vaddr_space();
 
-	alloc_virt_mem(vaddr_space);
-	alloc_virt_mem(vaddr_space);*/
-	
-	/*pci_dev_address* pci_devices = enumerate_pci_bus();
+	pci_dev_address* pci_devices = enumerate_pci_bus();
 
 	load_xhci_driver();
 
 	init_hc();
-	//dequeue_event(0, 0);
-	//init_device(0);*/
+	init_device(0);
+
 	while(true) {}
 	return 0;
 }

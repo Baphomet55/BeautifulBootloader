@@ -1,0 +1,13 @@
+High priority:
+
+	Finish xhci driver
+
+	Write class drivers for usb devices
+
+	Write a simple vga driver
+
+Low priority:
+
+	Add flexibility to physical and virtual memory managers.
+
+	Make the virtual memory manager code clearer
