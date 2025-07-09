@@ -61,10 +61,10 @@ void* alloc_virt_mem(uint64 address_space)
 
 uint64 virt_to_phys(uint64 virt_addr)
 {
-	uint64 pdpte = (virt_addr >> 29) & 0x3ff;
-	uint64 pde = (virt_addr >> 20) & 0x3ff;
-	uint64 pdt = (virt_addr >> 11) & 0x3ff;
-	uint64 offset = virt_addr & 0x3ff;
+	uint64 pdpte = (virt_addr >> 30) & 0x1ff;
+	uint64 pde = (virt_addr >> 21) & 0x1ff;
+	uint64 pdt = (virt_addr >> 12) & 0x1ff;
+	uint64 offset = virt_addr & 0x1ff;
 
 	uint64* pd = (uint64*) ((uint64) vaddr_pool[pdpte] & ~(0xff));
 	uint64* pt = (uint64*) ((uint64) pd[pde] & ~(0xff));

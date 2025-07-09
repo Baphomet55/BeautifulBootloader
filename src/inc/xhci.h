@@ -1,6 +1,9 @@
 typedef enum{
 	NO_OP,
 	ENABLE_SLOT,	
+	ADDRESS_DEVICE,
+	CONFIGURE_ENDPOINT,
+	EVALUATE_CONTEXT,
 	
 } commands;
 
@@ -158,4 +161,10 @@ int dequeue_event(int, event_trb**);
 
 int enqueue_command(commands);
 
-int init_device(int);
+long init_device(int);
+
+int init_device_slot(int);
+
+int dev_conf(uint32*);
+
+int add_contexts(uint32);

@@ -73,8 +73,13 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	load_xhci_driver();
 
 	init_hc();
-	init_device(0);
+	dequeue_event(0,0);
+	uint32* ctrl_ep;
+	ctrl_ep = (uint32*) init_device(0);
+	
+	dev_conf(ctrl_ep);
 
+	add_contexts(0xc);
 	while(true) {}
 	return 0;
 }

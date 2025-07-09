@@ -13,10 +13,10 @@ static xhci_doorbell_registers db_registers;
 
 static event_trb* event_ring;
 static command_trb* command_ring_eq_p;
-static device_context* dc_array;
+static device_context** dc_array;
 
-static void* output_device_contexts;
-static void* input_device_context;
+static uint32* output_device_contexts;
+static uint32* input_device_context;
 
 static uint64* vaddr_space;
 
@@ -79,13 +79,17 @@ int init_hc()
 
 	op_reg_address->config |= (cap_reg_address->hcs_params_1 & 0xff);	
 
-	uint64 xhci_page = virt_to_phys((uint64)vaddr_space);
+	uint64 xhci_page = virt_to_phys((uint64) vaddr_space);
 	op_reg_address->dcbaap = (uint64*) xhci_page;
 	op_reg_address->dcbaap[0] = 0;
 	xhci_page += 0x800;
 
 	op_reg_address->crcr = (command_trb*) xhci_page;
 	command_ring_eq_p = (command_trb*) xhci_page;
+
+	command_ring_eq_p[15].dword_1 = (uint32) command_ring_eq_p; 
+	command_ring_eq_p[15].trb_type = 6;
+	command_ring_eq_p[15].pad_1 = 1;
 	
 	xhci_page += 0x400;	
 
@@ -99,11 +103,10 @@ int init_hc()
 
 	start_hc();
 
-	//output_device_contexts = page_alloc(max_dc);
-	//input_device_context = page_alloc();
-
+	input_device_context = (uint32*) ((uint64)vaddr_space+0x1000);
+	output_device_contexts = (uint32*) ((uint64) vaddr_space+0x2000);
 		
-	return xhci_page;
+	return 0;
 }
 
 int dequeue_event(int er_index, event_trb** event)
@@ -139,8 +142,27 @@ int enqueue_command(commands cmd)
 		case ENABLE_SLOT:
 			command_ring_eq_p->trb_type = 9;	
 		break;
+		case ADDRESS_DEVICE:
+			command_ring_eq_p->dword_1 = virt_to_phys((uint64)input_device_context);
+			command_ring_eq_p->pad_2 = 0x100;
+			command_ring_eq_p->trb_type = 11;
+			command_ring_eq_p->cycle = 1;
+		break;
+		case CONFIGURE_ENDPOINT:
+			command_ring_eq_p++;
+			command_ring_eq_p->dword_1 = virt_to_phys((uint64) input_device_context);
+			command_ring_eq_p->trb_type = 12;
+			command_ring_eq_p->pad_2 = 0x100;
+			command_ring_eq_p->cycle = 1;
+		break;
+		case EVALUATE_CONTEXT:
+			command_ring_eq_p++;
+			command_ring_eq_p->dword_1 = virt_to_phys((uint64) input_device_context);
+			command_ring_eq_p->trb_type = 13;
+			command_ring_eq_p->pad_2 = 0x100;
+			command_ring_eq_p->cycle = 1;
+		break;
 	}
-	command_ring_eq_p++;
 	return 0;
 }
 
@@ -149,19 +171,36 @@ int handle_cmd(commands cmd)
 	
 	event_trb* event;
 	db_registers[0].db_target = 0;	
-
+		
+	int ret = 0;
 	switch(cmd)
 	{
 		case ENABLE_SLOT:
 			dequeue_event(0, &event);
+			int slot_id = event->pad_3 >> 7;
+			ret =init_device_slot(slot_id);
 		break;
 	}
-
-	return 0;
+	return ret;
 
 }
 
-int init_device(int port_id)
+int init_device_slot(int slot_id)
+{
+	uint64 default_ctrl_ep = virt_to_phys((uint64) vaddr_space+0x3000);
+
+	*(input_device_context) = 0;
+	*(input_device_context+1) = 0x3;
+	*(input_device_context+8) = 1 << 27;
+	*(input_device_context+9) = 0x10000;
+	*(input_device_context+17) = 0x400026; 
+	*(input_device_context+18) = default_ctrl_ep; 
+
+	op_reg_address->dcbaap[1] = virt_to_phys((uint64) output_device_contexts);
+	return (int) default_ctrl_ep;
+}
+
+long init_device(int port_id)
 {
 	if(!(port_registers[port_id].port_sc & 1))
 		return 1;
@@ -172,10 +211,69 @@ int init_device(int port_id)
 		dequeue_event(0, 0);
 	}
 	
+	int ret = 0;
 	enqueue_command(ENABLE_SLOT);
-	handle_cmd(ENABLE_SLOT);
+	ret = handle_cmd(ENABLE_SLOT);
 
-	return 0;
+	enqueue_command(ADDRESS_DEVICE);
+	handle_cmd(ADDRESS_DEVICE);
+
+
+	return ret;
 }
 
+int set_configuration(uint32* ctrl_ep)
+{
+	*(ctrl_ep) = 0x0010900;
+	*(ctrl_ep+2) = 0x8;
+	*(ctrl_ep+3) = 0x30840;
 
+	*(ctrl_ep+7) = 0x1020;
+
+	db_registers[1].db_target = 1;
+}
+
+int get_descriptor(uint32* ctrl_ep)
+{
+	*(ctrl_ep) = 0x2000680;
+	*(ctrl_ep+1) = 0x200000;
+	*(ctrl_ep+2) = 0x8;
+	*(ctrl_ep+3) = 0x30840;
+
+	*(ctrl_ep+4) = (uint32) ctrl_ep + 0x200;
+	*(ctrl_ep+6) = 0x20;
+	*(ctrl_ep+7) = 0x10c00;
+
+	*(ctrl_ep+11) = 0x1020;
+
+	db_registers[1].db_target = 1;
+}
+
+int dev_conf(uint32* ctrl_ep)
+{
+	
+	set_configuration(ctrl_ep);
+	
+	enqueue_command(CONFIGURE_ENDPOINT);
+	handle_cmd(0);
+
+	return 0x6969;
+}
+
+int add_contexts(uint32 add_flags)
+{
+	uint64 out_ep = virt_to_phys((uint64) vaddr_space+0x4000);
+	uint64 in_ep = virt_to_phys((uint64) vaddr_space+0x5000);
+	*(input_device_context+1) = add_flags;
+
+	*(input_device_context+25) = 0x400016;
+	*(input_device_context+26) = (uint32) out_ep;
+
+	*(input_device_context+33) = 0x400016;
+	*(input_device_context+34) = (uint32) in_ep;
+
+	enqueue_command(EVALUATE_CONTEXT);
+	handle_cmd(0);
+	//db_registers[1].db_target = 2;
+	return 0;
+}
