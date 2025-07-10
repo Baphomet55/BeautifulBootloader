@@ -79,7 +79,9 @@ int main(void* handle, EFI_SYSTEM_TABLE* system_table)
 	
 	dev_conf(ctrl_ep);
 
-	add_contexts(0xc);
+	uint32* out_ep = (uint32*)add_contexts(0xd);
+
+	endpoint_test(out_ep);
 	while(true) {}
 	return 0;
 }

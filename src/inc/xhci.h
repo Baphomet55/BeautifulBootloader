@@ -168,3 +168,6 @@ int init_device_slot(int);
 int dev_conf(uint32*);
 
 int add_contexts(uint32);
+
+int endpoint_test(uint32*);
+

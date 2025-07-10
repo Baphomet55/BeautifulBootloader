@@ -194,7 +194,7 @@ int init_device_slot(int slot_id)
 	*(input_device_context+8) = 1 << 27;
 	*(input_device_context+9) = 0x10000;
 	*(input_device_context+17) = 0x400026; 
-	*(input_device_context+18) = default_ctrl_ep; 
+	*(input_device_context+18) = default_ctrl_ep | 1; 
 
 	op_reg_address->dcbaap[1] = virt_to_phys((uint64) output_device_contexts);
 	return (int) default_ctrl_ep;
@@ -226,9 +226,9 @@ int set_configuration(uint32* ctrl_ep)
 {
 	*(ctrl_ep) = 0x0010900;
 	*(ctrl_ep+2) = 0x8;
-	*(ctrl_ep+3) = 0x30840;
+	*(ctrl_ep+3) = 0x30841;
 
-	*(ctrl_ep+7) = 0x1020;
+	*(ctrl_ep+7) = 0x1021;
 
 	db_registers[1].db_target = 1;
 }
@@ -238,13 +238,13 @@ int get_descriptor(uint32* ctrl_ep)
 	*(ctrl_ep) = 0x2000680;
 	*(ctrl_ep+1) = 0x200000;
 	*(ctrl_ep+2) = 0x8;
-	*(ctrl_ep+3) = 0x30840;
+	*(ctrl_ep+3) = 0x30841;
 
 	*(ctrl_ep+4) = (uint32) ctrl_ep + 0x200;
 	*(ctrl_ep+6) = 0x20;
-	*(ctrl_ep+7) = 0x10c00;
+	*(ctrl_ep+7) = 0x10c01;
 
-	*(ctrl_ep+11) = 0x1020;
+	*(ctrl_ep+11) = 0x1021;
 
 	db_registers[1].db_target = 1;
 }
@@ -252,11 +252,12 @@ int get_descriptor(uint32* ctrl_ep)
 int dev_conf(uint32* ctrl_ep)
 {
 	
-	set_configuration(ctrl_ep);
-	
 	enqueue_command(CONFIGURE_ENDPOINT);
 	handle_cmd(0);
 
+	set_configuration(ctrl_ep);
+
+	//get_descriptor(ctrl_ep);
 	return 0x6969;
 }
 
@@ -264,16 +265,58 @@ int add_contexts(uint32 add_flags)
 {
 	uint64 out_ep = virt_to_phys((uint64) vaddr_space+0x4000);
 	uint64 in_ep = virt_to_phys((uint64) vaddr_space+0x5000);
-	*(input_device_context+1) = add_flags;
+	*(input_device_context+1) = 4;
+	
+	*(input_device_context+8) = 0x18000000;
 
-	*(input_device_context+25) = 0x400016;
-	*(input_device_context+26) = (uint32) out_ep;
+	*(input_device_context+25) = 0x2000016;
+	*(input_device_context+26) = (uint32) out_ep | 1;
 
-	*(input_device_context+33) = 0x400016;
-	*(input_device_context+34) = (uint32) in_ep;
-
-	enqueue_command(EVALUATE_CONTEXT);
+	enqueue_command(CONFIGURE_ENDPOINT);
 	handle_cmd(0);
-	//db_registers[1].db_target = 2;
+	set_configuration((uint32*) 0xf020);
+
+	*(input_device_context+1) = 0xc;
+
+	*(input_device_context+33) = 0x2000036;
+	*(input_device_context+34) = (uint32) in_ep | 1;
+
+	enqueue_command(CONFIGURE_ENDPOINT);
+	handle_cmd(0);
+	set_configuration((uint32*) 0xf040);
+	return out_ep;
+}
+
+int endpoint_test(uint32* out_ep)
+{
+	uint32* data_buffer_o = (uint32*) virt_to_phys((uint64) vaddr_space+0x6000);
+	uint32* data_buffer_i = (uint32*) virt_to_phys((uint64) vaddr_space+0x7000);
+
+	uint32* in_ep = (uint32*) 0x11000;
+
+	*(out_ep) = (uint32) data_buffer_o;
+	*(out_ep+1) = 0;
+	*(out_ep+2) = 0x1f;
+	*(out_ep+3) = 0x421;
+
+	*(data_buffer_o) = 0x43425355;
+	*(data_buffer_o+1) = 0x69;
+	*(data_buffer_o+2) = 0x8000;
+	*(data_buffer_o+3) = 0x280a0080;
+	*(data_buffer_o+4) = 0x00000000;
+	*(data_buffer_o+5) = 0x40000000;
+
+	*(in_ep) = (uint32) data_buffer_i;
+	*(in_ep+1) = 0;
+	*(in_ep+2) = 0x8000;
+	*(in_ep+3) = 0x421;
+	
+	if(int_registers[0].ip == 1) { int_registers[0].ip = 0;}
+	db_registers[1].db_target = 2;	
+	
+	while(int_registers[0].ip == 0) {;}
+	
+	db_registers[1].db_target = 3;
 	return 0;
 }
+
